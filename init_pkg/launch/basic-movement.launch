@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="init_pkg" type="basic-movement.py" name="basic_node" output="screen">
+    </node>
+</launch>
