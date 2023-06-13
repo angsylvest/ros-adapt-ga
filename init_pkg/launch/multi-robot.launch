@@ -1,0 +1,12 @@
+<launch> 
+ <!-- Launch robot1 node --> 
+ <group ns="turtlebot_1">
+  <param name="robot_ip" value="192.168.28.137"/> 
+  <node name="r1_node" pkg="init_pkg" type="init_pose.py" output="screen">
+  <remap from="/odom" to="/odom_1" /> 
+  <remap from="/scan" to="/scan_1" /> 
+  </node> 
+
+ </group>
+
+</launch>
