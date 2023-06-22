@@ -7,6 +7,7 @@ from geometry_msgs.msg import PoseStamped, Twist, Pose, Point
 from sensor_msgs.msg import LaserScan, Image
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
+# from init_pkg.msg import chromosome # will hopefully be used eventually for inter-agent communication 
 
 
 class DemoRobot:
@@ -21,7 +22,7 @@ class DemoRobot:
         self.pitch = 0
         self.theta = 0
         
-        self.gen_time = 30
+        self.gen_time = 30 # in sec 
         
         self.curr_time = time.time()
         self.init_time = time.time()
@@ -31,24 +32,19 @@ class DemoRobot:
 
         # SET UP PUBLISHERS AND SUBSCRIBERS
         # -----------------------------------------------------------
-        # Sets up subscriber for move_base_simple/goal topic
-        # self.goal_subscriber = rospy.Subscriber('move_base_simple/goal', PoseStamped, 
-        # self.update_goal)
-        
-        # Set up publisher for goal topic 
-        self.goal_publisher = rospy.Publisher('goal_pub' , Pose, queue_size = 10) 
-        
         # accept navigation goal from RVis on the topic move_base_simple/goal
-        # rospy.wait_for_message('goal_pub', Pose)
+
+        # ultrasonic strategically placed to determine when obstacle vs retrievable item 
         
         # publisher for RViz
         self.rviz_publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         # publisher for Gazebo
         self.vel_publisher = rospy.Publisher('/cmd_vel_mux/input/navi', Twist, queue_size=10)
+        
         # current pose of robot
         self.pose_subscriber = rospy.Subscriber('/odom',
                                            Odometry, self.update_pose)
-        self.lidar_subscriber = rospy.Subscriber('/scan', LaserScan, self.lidarInfo)
+        self.lidar_subscriber = rospy.Subscriber('/scan', LaserScan, self.lidarInfo) 
         # subscriber to image
         self.image_subscriber = rospy.Subscriber('/camera/rgb/image_raw', Image, self.image_callback)
         
@@ -59,11 +55,13 @@ class DemoRobot:
         self.light_pub = ""
         self.light_sub = ""
         
+        self.behavior_set = ["crw", "spiral", "ballistic"]
         
         # navigation-specific info 
-        self.goal_orientation = "" 
-
-        self.rate = rospy.Rate(10)
+        self.goal_orientation = 0 
+	    self.step_size = 1200 # after approx 2 sec, want to switch direction (based off self.rate)	
+	
+        self.rate = rospy.Rate(10) # 10x per sec 
 
     # Helper functions
     def euclidean_distance(self, goal_pose, pose):
@@ -90,17 +88,6 @@ class DemoRobot:
         self.pitch = p
         self.theta = y
 
-        self.pose.x = round(pose_int.x, 4)
-        self.pose.y = round(pose_int.y, 4)
-
-        if (abs((atan2(goal_pose.y - self.pose.y, goal_pose.x - self.pose.x)) - self.theta) > 0.12):
-            self.isReorientating = True
-            # print('re-orientating')
-        else:
-            self.isReorientating = False
-            # print('should switch to moving straight')
-
-
     def lidarInfo(self, data):
         lidar_info = data
         if (lidar_info.ranges[0] < 1.0):
@@ -119,9 +106,9 @@ class DemoRobot:
 
     def process_light_sensor_data(self):
         self.light_sensor_one = ""
-        self.light_sensor_one = ""
-        self.light_sensor_one = ""
-        self.light_sensor_one = ""
+        self.light_sensor_two = ""
+        self.light_sensor_three = ""
+        self.light_sensor_four = ""
 
     ## Make abilities more easy to comprehend (more straightforward)
 
@@ -142,6 +129,23 @@ class DemoRobot:
         self.rviz_publisher.publish(vel_msg)
        
 
+    def goalBehavior(self):
+        # TODO: will have to troubleshoot 
+        LIGHT_THRESHOLD = 100 
+
+        sense_val = [self.light_sensor_one, self.light_sensor_two, self.light_sensor_three, self.light_sensor_four] 
+        max_index = sense_val.index(max(sense_val))
+
+        goal_orient = 0 
+        self.reorient(goal_orient)
+
+        while max(sense_val) > LIGHT_THRESHOLD: 
+            self.moveBackwards()
+            self.rate.sleep()
+
+        return True # task successful, will continue exploring again 
+
+
     def moveLeft(self):
         vel_msg = Twist()
         # Linear velocity in the x-axis.
@@ -158,7 +162,7 @@ class DemoRobot:
         self.vel_publisher.publish(vel_msg)
         self.rviz_publisher.publish(vel_msg)
 
-    def moveBackwards(self):
+    def moveBackwards(self, duration = 10):
         vel_msg = Twist()
         # Linear velocity in the x-axis.
         vel_msg.linear.x = -0.3
@@ -212,78 +216,150 @@ class DemoRobot:
     def shutdown(self):
         print('successfully reached goal .. shutting down') 
     
+    
+    def avoidanceBehavior(self):
+        while (self.isAvoiding):
+		print('initiating obstacle behavior')
+		# Linear velocity in the x-axis.
+		vel_msg.linear.x = -0.3  # slight movement backward along the obstacle
+		# Angular velocity in the z-axis.
+		vel_msg.angular.z = 0.33  # intended to rotate robot away from obstacle
+		# Publishing of vel_msg for Gazebo
+		self.vel_publisher.publish(vel_msg)
+		self.rviz_publisher.publish(vel_msg)
+		# only updates after each iteration
+		euclidean_distance_curr = self.euclidean_distance(goal_pose, self.pose)
 
+		self.rate.sleep()
     ## Example tasks that we would make robot do
     
-    def initiateMazeBehavior(self):
+    
+    def reorient(self, goal_orientation): 
+    	curr_orientation = self.theta 
+    	
+    	while (abs(curr_orientation - goal_orientation)) > 0.2: # while re_orienting 
+            if (self.isAvoiding == False):  # trying to force goal repositioning only when it's safe to do so
+                print('no obstacles .. initiating reorientation toward goal')
+                vel_msg.linear.x = 0
+                # Angular velocity in the z-axis.
+                vel_msg.angular.z = 0.3  # a test to see if slowly reorientating will allow robot to detect change
+                print('angular velocity in reorient ----------------')
+                print(vel_msg.angular.z)
+                # Publishing of vel_msg for Gazebo
+                self.vel_publisher.publish(vel_msg)
+                self.rviz_publisher.publish(vel_msg)
 
-
-        if time.time() - self.init_time >= self.gen_time: 
-        	self.init_time = time.time()
-        
-        #Set to position of end of maze
-        global goal_pose
-        goal_pose = Point()
-        goal_pose.x = -1
-        goal_pose.y = -5
-        
-        goal_pose.x = float(goal_pose.x)
-        goal_pose.y = float(goal_pose.y) 
-        
-        # self.goal_publisher.publish(goal_pose) 
-        vel_msg = Twist()
-
-        euclidean_distance_curr = self.euclidean_distance(goal_pose, self.pose)
-        while (euclidean_distance_curr > 0.1):
-        
-            # general avoidance behavior 
-            while(self.isAvoiding):
-                print('initating avoidance behavior') 
-                print('theta ------------------------') 
-                print(self.theta) 
-                while (self.theta > -1.5708):
-                    vel_msg.linear.x = -0.2  # slight movement backward along the obstacle
-                    # Angular velocity in the z-axis.
-                    vel_msg.angular.z = 0.33  # intended to rotate robot away from obstacle
-                    # Publishing of vel_msg for Gazebo
-                    self.vel_publisher.publish(vel_msg)
-                    self.rviz_publisher.publish(vel_msg)
-                    # only updates after each iteration
-                    euclidean_distance_curr = self.euclidean_distance(goal_pose, self.pose)
-                    
-                    self.rate.sleep()
-                while (self.theta < 3.14):
-                    vel_msg.linear.x = -0.2  # slight movement backward along the obstacle
-                    # Angular velocity in the z-axis.
-                    vel_msg.angular.z = -0.33  # intended to rotate robot away from obstacle
-                    # Publishing of vel_msg for Gazebo
-                    self.vel_publisher.publish(vel_msg)
-                    self.rviz_publisher.publish(vel_msg)
-                    # only updates after each iteration
-                    euclidean_distance_curr = self.euclidean_distance(goal_pose, self.pose)
+                # Rate
+                self.rate.sleep()
                 
-                    self.rate.sleep()
+                else: 
+                    self.avoidanceBehavior()
+		    
+	# will stop rotating and continue moving 
+    	self.moveForwards()	
+    
+    def getProbDistrib(self, curr_orientation): 
+        # will need to update since we are assuming some amount of error (potentially)
+        poss_orientations = [0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi, 2)]
+        curr_index = poss_orientations.index(curr_orientation)
 
-            self.moveForwards()
-            print('moving forward') 
-            self.rate.sleep()
-            euclidean_distance_curr = self.euclidean_distance(goal_pose, self.pose)
-           
-        self.stop()
-        print('stopping -- reached end of maze') 
+        return poss_orientations[curr_index: ] + poss_orientations[:curr_index]
 
 
-    def moveFromPointAtoPointB(self):
-        # same as homework assignment
-        global goal_pose
-        goal_pose = Point()
-        goal_pose.x = float(input('please enter x position'))
-        goal_pose.y = float(input('please enter y position'))
+    def generatePath(self, curr_orientation):
+        poss_orientations = [0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi, 2)]
+        dist = [1 for i in range(4)]
+        return [i + 1 for i in dist if i == round(curr_orientation,2)] # higher pref for curr orientation  
+
+
+    def initiateCRW(self):
+    	step_count = 0 
+ 
+        current_orientation = self.theta
+        prob_dist = self.getProbDistrib(current_orientation)
         
+        goal_orientation = random.choices[0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi, 2), [prob_dist]]
+        # set hard time limit 
+            while (time.time() - self.init_time >= self.gen_time): 
+                # self.init_time = time.time()
+                self.avoidanceBehavior() # continously check for obstacles 
+                
+                step_count += 1 
+                
+                if step_count == self.step_size: 
+                    # re-orient again to another cardinal direction 
+                    prob_dist = [2, 1, 1, 1] # will need to compute properly
+                    goal_orientation = random.choices[0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi,2), [prob_dist])
+                    self.reorient()
+                    step_count = 0 
+                    
+                self.rate.sleep()
+    		
+    		
+    def initiateSpiralMove(self):
+    	step_count = 0 
+ 
+        current_orientation = self.theta
+        prob_dist = self.generatePath(self.theta)
+        init_index = 0 
+        
+        # set hard time limit 
+            while (time.time() - self.init_time >= self.gen_time and init_index <= len(prob_dist)): 
+                # self.init_time = time.time()
+                self.avoidanceBehavior() # continously check for obstacles 
+                
+                step_count += 1 
+                
+                if step_count == self.step_size: 
+                    # re-orient again to another cardinal direction 
+                    init_index+=1
+                    goal_orientation = prob_dist[init_index]
+                    self.reorient()
+                    step_count = 0 
+                    
+                self.rate.sleep()
+    	
+    	
+    	
+    def initiateBallistic(self): 
+    	step_count = 0 
+ 
+        current_orientation = self.theta
+        prob_dist = self.getProbDistrib(current_orientation)
+        
+        goal_orientation = self.theta
+        # set hard time limit 
+            while (time.time() - self.init_time >= self.gen_time): 
+                # self.init_time = time.time()
+                self.avoidanceBehavior() # continously check for obstacles 
+                
+                step_count += 1 
+                
+                if step_count == self.step_size: 
+                    # re-orient again to another cardinal direction 
+                    goal_orientation = self.theta
+                    self.reorient()
+                    step_count = 0 
+                    
+                self.rate.sleep()
+    	
+    def calculate_angle(self):
+
+        # want to use light source 
+        dx = x2 - x1
+        dy = y2 - y1
+        angle = math.atan2(dy, dx)
+        # Convert angle to degrees if desired
+        # angle_degrees = math.degrees(angle)
+        return angle
+
+    def moveFromPointAtoPointB(self, goal):
         # self.goal_publisher.publish(goal_pose) 
 
         vel_msg = Twist()
-        euclidean_distance_curr = self.euclidean_distance(goal_pose, self.pose)
+        euclidean_distance_curr = self.euclidean_distance(goal, self.pose)
+        
+        home_orientation = self.calculate_angle()
 
         while (euclidean_distance_curr > 0.1):
 
@@ -301,7 +377,7 @@ class DemoRobot:
 
                 self.rate.sleep()
 
-            while (self.isReorientating):
+            while (round(self.theta,2) != home_orientation):
 
                 if (self.isAvoiding == False):  # trying to force goal repositioning only when it's safe to do so
                     print('no obstacles .. initiating reorientation toward goal')
@@ -336,7 +412,7 @@ if __name__ == '__main__':
     while not rospy.is_shutdown():
 
         demo_robot = DemoRobot()
-        demo_robot.initiateMazeBehavior()
+        demo_robot.initiateCRW()
         # demo_robot.moveFromPointAtoPointB()
 
         rospy.spin()
