@@ -2,6 +2,8 @@
 from math import sqrt, atan2
 import rospy
 import time 
+import math 
+import random 
 
 from geometry_msgs.msg import PoseStamped, Twist, Pose, Point
 from sensor_msgs.msg import LaserScan, Image
@@ -59,7 +61,7 @@ class DemoRobot:
         
         # navigation-specific info 
         self.goal_orientation = 0 
-	    self.step_size = 1200 # after approx 2 sec, want to switch direction (based off self.rate)	
+        self.step_size = 1200 # after approx 2 sec, want to switch direction (based off self.rate)	
 	
         self.rate = rospy.Rate(10) # 10x per sec 
 
@@ -219,18 +221,18 @@ class DemoRobot:
     
     def avoidanceBehavior(self):
         while (self.isAvoiding):
-		print('initiating obstacle behavior')
-		# Linear velocity in the x-axis.
-		vel_msg.linear.x = -0.3  # slight movement backward along the obstacle
-		# Angular velocity in the z-axis.
-		vel_msg.angular.z = 0.33  # intended to rotate robot away from obstacle
-		# Publishing of vel_msg for Gazebo
-		self.vel_publisher.publish(vel_msg)
-		self.rviz_publisher.publish(vel_msg)
-		# only updates after each iteration
-		euclidean_distance_curr = self.euclidean_distance(goal_pose, self.pose)
+            print('initiating obstacle behavior')
+            # Linear velocity in the x-axis.
+            vel_msg.linear.x = -0.3  # slight movement backward along the obstacle
+            # Angular velocity in the z-axis.
+            vel_msg.angular.z = 0.33  # intended to rotate robot away from obstacle
+            # Publishing of vel_msg for Gazebo
+            self.vel_publisher.publish(vel_msg)
+            self.rviz_publisher.publish(vel_msg)
+            # only updates after each iteration
+            euclidean_distance_curr = self.euclidean_distance(goal_pose, self.pose)
 
-		self.rate.sleep()
+            self.rate.sleep()
     ## Example tasks that we would make robot do
     
     
@@ -252,8 +254,8 @@ class DemoRobot:
                 # Rate
                 self.rate.sleep()
                 
-                else: 
-                    self.avoidanceBehavior()
+            else: 
+                self.avoidanceBehavior()
 		    
 	# will stop rotating and continue moving 
     	self.moveForwards()	
@@ -262,7 +264,6 @@ class DemoRobot:
         # will need to update since we are assuming some amount of error (potentially)
         poss_orientations = [0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi, 2)]
         curr_index = poss_orientations.index(curr_orientation)
-
         return poss_orientations[curr_index: ] + poss_orientations[:curr_index]
 
 
@@ -273,75 +274,76 @@ class DemoRobot:
 
 
     def initiateCRW(self):
-    	step_count = 0 
+        step_count = 0 
  
         current_orientation = self.theta
         prob_dist = self.getProbDistrib(current_orientation)
         
-        goal_orientation = random.choices[0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi, 2), [prob_dist]]
+        print(len(prob_dist), len([0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi, 2)]))
+        goal_orientation = random.choices([0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi, 2)], prob_dist)
         # set hard time limit 
-            while (time.time() - self.init_time >= self.gen_time): 
-                # self.init_time = time.time()
-                self.avoidanceBehavior() # continously check for obstacles 
+        while (time.time() - self.init_time >= self.gen_time): 
+            # self.init_time = time.time()
+            self.avoidanceBehavior() # continously check for obstacles 
                 
-                step_count += 1 
+            step_count += 1 
                 
-                if step_count == self.step_size: 
-                    # re-orient again to another cardinal direction 
-                    prob_dist = [2, 1, 1, 1] # will need to compute properly
-                    goal_orientation = random.choices[0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi,2), [prob_dist])
-                    self.reorient()
-                    step_count = 0 
+            if step_count == self.step_size: 
+                # re-orient again to another cardinal direction 
+                prob_dist = [2, 1, 1, 1] # will need to compute properly
+                goal_orientation = random.choices([0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi,2)], [prob_dist])
+                self.reorient()
+                step_count = 0 
                     
-                self.rate.sleep()
+            self.rate.sleep()
     		
     		
     def initiateSpiralMove(self):
-    	step_count = 0 
+        step_count = 0 
  
         current_orientation = self.theta
         prob_dist = self.generatePath(self.theta)
         init_index = 0 
         
         # set hard time limit 
-            while (time.time() - self.init_time >= self.gen_time and init_index <= len(prob_dist)): 
-                # self.init_time = time.time()
-                self.avoidanceBehavior() # continously check for obstacles 
+        while (time.time() - self.init_time >= self.gen_time and init_index <= len(prob_dist)): 
+            # self.init_time = time.time()
+            self.avoidanceBehavior() # continously check for obstacles 
                 
-                step_count += 1 
+            step_count += 1 
                 
-                if step_count == self.step_size: 
-                    # re-orient again to another cardinal direction 
-                    init_index+=1
-                    goal_orientation = prob_dist[init_index]
-                    self.reorient()
-                    step_count = 0 
+            if step_count == self.step_size: 
+                # re-orient again to another cardinal direction 
+                init_index+=1
+                goal_orientation = prob_dist[init_index]
+                self.reorient()
+                step_count = 0 
                     
-                self.rate.sleep()
+            self.rate.sleep()
     	
     	
     	
     def initiateBallistic(self): 
-    	step_count = 0 
+        step_count = 0 
  
         current_orientation = self.theta
         prob_dist = self.getProbDistrib(current_orientation)
         
         goal_orientation = self.theta
         # set hard time limit 
-            while (time.time() - self.init_time >= self.gen_time): 
-                # self.init_time = time.time()
-                self.avoidanceBehavior() # continously check for obstacles 
+        while (time.time() - self.init_time >= self.gen_time): 
+            # self.init_time = time.time()
+            self.avoidanceBehavior() # continously check for obstacles 
                 
-                step_count += 1 
+            step_count += 1 
                 
-                if step_count == self.step_size: 
-                    # re-orient again to another cardinal direction 
-                    goal_orientation = self.theta
-                    self.reorient()
-                    step_count = 0 
+            if step_count == self.step_size: 
+                # re-orient again to another cardinal direction 
+                goal_orientation = self.theta
+                self.reorient()
+                step_count = 0 
                     
-                self.rate.sleep()
+            self.rate.sleep()
     	
     def calculate_angle(self):
 
