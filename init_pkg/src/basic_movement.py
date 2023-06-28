@@ -63,6 +63,7 @@ class DemoRobot:
         
         # navigation-specific info 
         self.goal_orientation = 0 
+        self.current_orientation = 0 
         self.step_size = 1200 # after approx 2 sec, want to switch direction (based off self.rate)	
 	
         self.rate = rospy.Rate(10) # 10x per sec 
@@ -260,7 +261,6 @@ class DemoRobot:
   
         init_time = time.time()    
         while (time.time() - init_time < 3): 
-            print('slight forward movement after obstacle avoidance')
             self.moveForwards()
             self.rate.sleep() 
     ## Example tasks that we would make robot do
@@ -287,26 +287,28 @@ class DemoRobot:
                 
             else: 
                 self.avoidanceBehavior()
+                
+        self.current_orientation = round(goal_orientation,2)
 		    
     
     def getProbDistrib(self, curr_orientation): 
+        poss_orientations = [0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi, 2)]
+        dist = [1 for i in range(4)]
+        return [dist[i] + 1 if poss_orientations[i] == round(curr_orientation, 2) else dist[i] for i in range(len(dist))]
+ # higher pref for curr orientation  
+
+
+    def generatePath(self, curr_orientation):
         # will need to update since we are assuming some amount of error (potentially)
         poss_orientations = [0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi, 2)]
         curr_index = poss_orientations.index(curr_orientation)
         return poss_orientations[curr_index: ] + poss_orientations[:curr_index]
-
-
-    def generatePath(self, curr_orientation):
-        poss_orientations = [0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi, 2)]
-        dist = [1 for i in range(4)]
-        return [i + 1 for i in dist if i == round(curr_orientation,2)] # higher pref for curr orientation  
-
-
+        
     def initiateCRW(self):
         step_count = 0 
  
         current_orientation = self.theta
-        prob_dist = self.getProbDistrib(current_orientation)
+        prob_dist = self.getProbDistrib(current_orientation) # TODO: this is wrong (should be for spiral)
         print('current prob dist --', prob_dist) 
         
         print(len(prob_dist), len([0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi, 2)]))
@@ -339,7 +341,8 @@ class DemoRobot:
         step_count = 0 
  
         current_orientation = self.theta
-        prob_dist = self.generatePath(self.theta)
+        prob_dist = self.generatePath(self.current_orientation)
+        print('generated spiral path', prob_dist)
         init_index = 0 
         
         # set hard time limit 
@@ -353,7 +356,8 @@ class DemoRobot:
                 # re-orient again to another cardinal direction 
                 init_index+=1
                 goal_orientation = prob_dist[init_index]
-                self.reorient()
+                print('reorienting to next dir --', prob_dist[init_index])
+                self.reorient(goal_orientation)
                 step_count = 0 
                     
             self.rate.sleep()
@@ -376,7 +380,7 @@ class DemoRobot:
             if step_count == self.step_size: 
                 # re-orient again to another cardinal direction 
                 goal_orientation = self.theta
-                self.reorient()
+                self.reorient(goal_orientation)
                 step_count = 0 
                     
             self.rate.sleep()
@@ -451,7 +455,9 @@ if __name__ == '__main__':
     while not rospy.is_shutdown():
 
         demo_robot = DemoRobot()
-        demo_robot.initiateCRW()
+        # demo_robot.initiateCRW()
+        demo_robot.initiateSpiralMove()
+        # demo_robot.initiateBallistic()
         # demo_robot.moveFromPointAtoPointB()
 
         rospy.spin()
