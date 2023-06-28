@@ -3,6 +3,8 @@ from math import sqrt, atan2
 import rospy
 import time 
 import math 
+
+from math import pi 
 import random 
 
 from geometry_msgs.msg import PoseStamped, Twist, Pose, Point
@@ -184,7 +186,7 @@ class DemoRobot:
     def moveForwards(self):
         vel_msg = Twist()
         # Linear velocity in the x-axis.
-        vel_msg.linear.x = 0.3
+        vel_msg.linear.x = 0.2
         vel_msg.linear.y = 0
         vel_msg.linear.z = 0
 
@@ -217,36 +219,65 @@ class DemoRobot:
         
     def shutdown(self):
         print('successfully reached goal .. shutting down') 
+
+
+    # calculates angle normal to current orientation 
+    def calc_normal(self, curr_angle): 
+
+        if (curr_angle + round(pi/2, 2) <= round(pi, 2) and curr_angle <= round(pi, 2) and curr_angle >= 0): 
+            return round(curr_angle + round(pi/2, 2), 2)
     
+        elif (curr_angle + round(pi/2, 2) > round(pi, 2) and curr_angle < round(pi, 2) and curr_angle > 0): 
+            diff = round(pi/2, 2) - (round(pi,2) - curr_angle) 
+            return round((-1*round(pi/2, 2) + diff),2)
+    
+        elif (curr_angle + round(pi/2, 2) < 0 and curr_angle < 0): 
+            return round((-1*round(pi, 2) + curr_angle + round(pi/2, 2)),2)
+        
+        elif (curr_angle + round(pi/2, 2) >= 0 and curr_angle <= 0): 
+            diff = abs(round(pi/2, 2) - curr_angle) 
+            return round(diff,2) 
+        
     
     def avoidanceBehavior(self):
+        vel_msg = Twist()
+        print('checking obstacles --', self.isAvoiding)
         while (self.isAvoiding):
             print('initiating obstacle behavior')
             # Linear velocity in the x-axis.
             vel_msg.linear.x = -0.3  # slight movement backward along the obstacle
             # Angular velocity in the z-axis.
-            vel_msg.angular.z = 0.33  # intended to rotate robot away from obstacle
+            # vel_msg.angular.z = 0.33  # intended to rotate robot away from obstacle
             # Publishing of vel_msg for Gazebo
             self.vel_publisher.publish(vel_msg)
             self.rviz_publisher.publish(vel_msg)
-            # only updates after each iteration
-            euclidean_distance_curr = self.euclidean_distance(goal_pose, self.pose)
 
             self.rate.sleep()
+        
+        print('reorienting normal to obstacle', self.theta)   
+         
+        self.reorient(self.calc_normal(self.theta)) # reorient normal to current orientation 
+  
+        init_time = time.time()    
+        while (time.time() - init_time < 3): 
+            print('slight forward movement after obstacle avoidance')
+            self.moveForwards()
+            self.rate.sleep() 
     ## Example tasks that we would make robot do
     
     
     def reorient(self, goal_orientation): 
-    	curr_orientation = self.theta 
+        vel_msg = Twist()
+        curr_orientation = round(self.theta,2) 
+        print('beginning reorienting behavior towards goal', curr_orientation, goal_orientation) 
     	
-    	while (abs(curr_orientation - goal_orientation)) > 0.2: # while re_orienting 
+        while (abs(curr_orientation - round(goal_orientation,2))) > 0.2:
+         # while re_orienting
+            curr_orientation = round(self.theta,2) 
             if (self.isAvoiding == False):  # trying to force goal repositioning only when it's safe to do so
-                print('no obstacles .. initiating reorientation toward goal')
                 vel_msg.linear.x = 0
                 # Angular velocity in the z-axis.
-                vel_msg.angular.z = 0.3  # a test to see if slowly reorientating will allow robot to detect change
-                print('angular velocity in reorient ----------------')
-                print(vel_msg.angular.z)
+                vel_msg.angular.z = 0.2
                 # Publishing of vel_msg for Gazebo
                 self.vel_publisher.publish(vel_msg)
                 self.rviz_publisher.publish(vel_msg)
@@ -257,8 +288,6 @@ class DemoRobot:
             else: 
                 self.avoidanceBehavior()
 		    
-	# will stop rotating and continue moving 
-    	self.moveForwards()	
     
     def getProbDistrib(self, curr_orientation): 
         # will need to update since we are assuming some amount of error (potentially)
@@ -278,22 +307,30 @@ class DemoRobot:
  
         current_orientation = self.theta
         prob_dist = self.getProbDistrib(current_orientation)
+        print('current prob dist --', prob_dist) 
         
         print(len(prob_dist), len([0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi, 2)]))
-        goal_orientation = random.choices([0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi, 2)], prob_dist)
+        goal_orientation = random.choices([0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi, 2)], prob_dist)[0]
+        
+        self.reorient(goal_orientation)
         # set hard time limit 
-        while (time.time() - self.init_time >= self.gen_time): 
+        while (time.time() - self.init_time <= self.gen_time): 
+            print('time left --', time.time() - self.init_time)
             # self.init_time = time.time()
             self.avoidanceBehavior() # continously check for obstacles 
                 
+            # will stop rotating and continue moving 
+            print('now proceeding forward')
+            self.moveForwards()	
             step_count += 1 
                 
             if step_count == self.step_size: 
                 # re-orient again to another cardinal direction 
                 prob_dist = [2, 1, 1, 1] # will need to compute properly
-                goal_orientation = random.choices([0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi,2)], [prob_dist])
-                self.reorient()
+                goal_orientation = random.choices([0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi,2)], [prob_dist])[0]
+                self.reorient(goal_orientation)
                 step_count = 0 
+                print('resetting direction --')
                     
             self.rate.sleep()
     		
@@ -306,7 +343,7 @@ class DemoRobot:
         init_index = 0 
         
         # set hard time limit 
-        while (time.time() - self.init_time >= self.gen_time and init_index <= len(prob_dist)): 
+        while (time.time() - self.init_time <= self.gen_time and init_index <= len(prob_dist)): 
             # self.init_time = time.time()
             self.avoidanceBehavior() # continously check for obstacles 
                 
@@ -322,7 +359,6 @@ class DemoRobot:
             self.rate.sleep()
     	
     	
-    	
     def initiateBallistic(self): 
         step_count = 0 
  
@@ -331,7 +367,7 @@ class DemoRobot:
         
         goal_orientation = self.theta
         # set hard time limit 
-        while (time.time() - self.init_time >= self.gen_time): 
+        while (time.time() - self.init_time <= self.gen_time): 
             # self.init_time = time.time()
             self.avoidanceBehavior() # continously check for obstacles 
                 
@@ -344,6 +380,7 @@ class DemoRobot:
                 step_count = 0 
                     
             self.rate.sleep()
+    	
     	
     def calculate_angle(self):
 
