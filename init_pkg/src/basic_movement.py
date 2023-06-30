@@ -11,7 +11,7 @@ from geometry_msgs.msg import PoseStamped, Twist, Pose, Point
 from sensor_msgs.msg import LaserScan, Image
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
-# from init_pkg.msg import chromosome # will hopefully be used eventually for inter-agent communication 
+from init_pkg.msg import chromosome # will hopefully be used eventually for inter-agent communication 
 
 
 class DemoRobot:
@@ -53,8 +53,8 @@ class DemoRobot:
         self.image_subscriber = rospy.Subscriber('/camera/rgb/image_raw', Image, self.image_callback)
         
         # group level sharing publisher and subscriber 
-        # self.pop_publisher = rospy.Publisher('/chrome-fit', chromosome, queue_size=50)
-        # self.pop_subscriber = rospy.Subscriber('/chrome-info', chromosome, self.process_info)
+        self.pop_publisher = rospy.Publisher('/chrome_fit', chromosome, queue_size=50)
+        self.pop_subscriber = rospy.Subscriber('/chrome_fit', chromosome, self.process_info)
         
         self.light_pub = ""
         self.light_sub = ""
@@ -107,6 +107,7 @@ class DemoRobot:
          # print(data)
          
     def process_info(self, data): 
+    	print('incoming chromosome msg published --', data)
     	d = data
 
     def process_light_sensor_data(self):
@@ -220,6 +221,22 @@ class DemoRobot:
         
     def shutdown(self):
         print('successfully reached goal .. shutting down') 
+        
+        
+    def distribute_chromosome(self, reward, penalty, speed, threshold, fitness):
+    ################ ----------chromosome pub------------ ############
+        incoming_msg = chromosome()
+        incoming_msg.speed = str(speed)
+        incoming_msg.reward = str(reward)
+        incoming_msg.penalty = str(penalty)
+        incoming_msg.threshold = str(threshold)
+        incoming_msg.fitness = float(fitness)
+        
+        print('attempting to publish --', incoming_msg)
+        self.pop_publisher.publish(incoming_msg) 
+
+    ################# ---------------------- ############
+    	
 
 
     # calculates angle normal to current orientation 
@@ -245,6 +262,7 @@ class DemoRobot:
         print('checking obstacles --', self.isAvoiding)
         while (self.isAvoiding):
             print('initiating obstacle behavior')
+            
             # Linear velocity in the x-axis.
             vel_msg.linear.x = -0.3  # slight movement backward along the obstacle
             # Angular velocity in the z-axis.
@@ -338,6 +356,7 @@ class DemoRobot:
     		
     		
     def initiateSpiralMove(self):
+    
         step_count = 0 
  
         current_orientation = self.theta
@@ -347,6 +366,7 @@ class DemoRobot:
         
         # set hard time limit 
         while (time.time() - self.init_time <= self.gen_time and init_index <= len(prob_dist)): 
+        
             # self.init_time = time.time()
             self.avoidanceBehavior() # continously check for obstacles 
                 
