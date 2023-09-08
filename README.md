@@ -11,10 +11,13 @@ Start-up instructions (one robot)
 
 Overview of sensors
 1. To get robot started use the following commands (use separate terminals for each):
+   
    a. roscore
+   
    b. roslaunch turtlebot3_bringup turtlebot3_robot.launch
+   
  NOTE: If you are unable to connect using these commands, you may need to update the ROS_MASTER_IP to be either your own computer if    you are using your computer as the ROS master or just the IP address of the turtlebot itself. To find the IP address, refer to the     "inet" portion when you call "ifconfig" in the terminal. To update the ROS_MASTER_IP, you can edit it by calling "sudo nano ~/.bashrc". 
-2. The ultrasonic sensor is an additional accessory. To see the script to create a topic for that sensor, refer to a file called ultrasonic_sensor_topic.py
+3. The ultrasonic sensor is an additional accessory. To see the script to create a topic for that sensor, refer to a file called ultrasonic_sensor_topic.py
 
 TODO:
 1. Figure out collection behavior using given sensors. 
