@@ -5,7 +5,7 @@ Start-up instructions (one robot)
 2. Make sure your robot is connected to the same wifi network as your computer
 3. Find the IP address for your robot
 4. Use the following command to remote-in:
-   a. ssh ubuntu@<ip-address>
+   a. ssh ubuntu@"<ip-address>"
 5. You should see a terminal that corresponds to the robot you are remoting into
 
 
