@@ -1,4 +1,33 @@
 <launch>
-    <node pkg="init_pkg" type="basic-movement.py" name="basic_node" output="screen">
-    </node>
+ <!-- Launch robot1 node -->
+ <group ns="turtlebot_1">
+  <launch> 
+    <include file="$(find turtlebot_bringup)/launch/robot.launch"/>
+  </launch>
+  <param name="robot_ip" value="192.168.28.133"/>
+  <node name="r1_movement" pkg="init_pkg" type="basic_movement.py" output="screen">
+  <remap from="/chrome_fit" to="/chrome_fit_1" />
+      <remap from="/odom" to="/turtlebot_1/odom_1" />
+      <remap from="/scan" to="/turtlebot_1/scan_1" />
+
+  </node>
+
+</group>
+
+
+ <!-- Launch robot2 node -->
+ <group ns="turtlebot_2">
+  <launch>
+    <include file="$(find turtlebot_bringup)/launch/robot.launch"/>
+  </launch>
+  <param name="robot_ip" value="192.168.28.135"/>
+  <node name="r2_movement" pkg="init_pkg" type="basic_movement.py" output="screen">
+  <remap from="/chrome_fit" to="/chrome_fit_2" />
+      <remap from="/odom" to="/turtlebot_2/odom_2" />
+      <remap from="/scan" to="/turtlebot_2/scan_2" />
+
+  </node>
+
+ </group>
+
 </launch>

@@ -1,0 +1,11 @@
+<launch>
+ <!-- Launch robot1 node -->
+  <param name="robot_ip" value="192.168.28.133"/>
+  <node name="r1_movement" pkg="init_pkg" type="basic_movement.py" output="screen">
+  <remap from="/chrome_fit" to="/chrome_fit_1" />
+      <remap from="/odom" to="/turtlebot_1/odom_1" />
+      <remap from="/scan" to="/turtlebot_1/scan_1" />
+
+  </node>
+
+</launch>

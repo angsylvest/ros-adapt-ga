@@ -11,7 +11,9 @@ from geometry_msgs.msg import PoseStamped, Twist, Pose, Point
 from sensor_msgs.msg import LaserScan, Image
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
-from init_pkg.msg import chromosome # will hopefully be used eventually for inter-agent communication 
+from init_pkg.msg import chromosome 
+
+from std_msgs.msg import Float32 
 
 
 class DemoRobot:
@@ -56,6 +58,9 @@ class DemoRobot:
         self.pop_publisher = rospy.Publisher('/chrome_fit', chromosome, queue_size=50)
         self.pop_subscriber = rospy.Subscriber('/chrome_fit', chromosome, self.process_info)
         
+        
+        self.ultrasonic_val = rospy.Subscriber('/ultrasonic', Float32, self.process_ultrasonic)
+        
         self.light_pub = ""
         self.light_sub = ""
         
@@ -65,14 +70,19 @@ class DemoRobot:
         self.goal_orientation = 0 
         self.current_orientation = 0 
         self.step_size = 1200 # after approx 2 sec, want to switch direction (based off self.rate)	
+        self.homing = False 
 	
+        self.current_pos = (0, 0, 0)
         self.rate = rospy.Rate(10) # 10x per sec 
 
     # Helper functions
     def euclidean_distance(self, goal_pose, pose):
         """Euclidean distance between current pose and the goal."""
-        goal_pose.x = int(goal_pose.x)
-        goal_pose.y = int(goal_pose.y)
+        (goal_x, goal_y, goal_z) = goal_pose 
+        (pose_x, pose_y, pose_z) = pose 
+        
+        # goal_pose.x = int(goal_pose.x)
+        # goal_pose.y = int(goal_pose.y)
 
         return sqrt(pow((goal_pose.x - pose.x), 2) +
                     pow((goal_pose.y - pose.y), 2))
@@ -89,6 +99,9 @@ class DemoRobot:
         pose_int = data.pose.pose.position
         theta_int = data.pose.pose.orientation
         (r, p, y) = euler_from_quaternion([theta_int.x, theta_int.y, theta_int.z, theta_int.w])
+        
+        self.current_pos = pose_int
+        
         self.roll = r
         self.pitch = p
         self.theta = y
@@ -117,6 +130,17 @@ class DemoRobot:
         self.light_sensor_four = ""
 
     ## Make abilities more easy to comprehend (more straightforward)
+    
+    def process_ultrasonic(self, data):
+        ultra_val = data 
+        ultra_thres = 100
+        dist_thres = 100
+        
+        if data > ultra_thres and not self.isAvoiding and math.sqrt(x^2 + y^2) > dist_thres:
+            self.homing = True
+        else: 
+            self.homing = False
+             
 
     def moveRight(self):
         vel_msg = Twist()
@@ -223,6 +247,26 @@ class DemoRobot:
         print('successfully reached goal .. shutting down') 
         
         
+    def homing_behavior(self):
+        # homing behavior: 
+        # 1. check ultrasonic value 
+        # 2. reorient to 0,0 
+        # 3. forward until within 0,0
+        # 4. select new orientation (leaving sphere) 
+        print('homing behavior, current pos', self.current_pos)
+        (x, y, z) = self.current_pos
+        dist_thrs = 0.05
+        
+        orientation_goal = (5,5,0)
+        
+        self.moveFromPointAtoPointB(orientation_goal)
+        
+        while math.sqrt(x^2 + y^2) > dist_thrs: 
+             self.moveFromPointAtoPointB(orientation_goal)
+         
+        print('finished homing')
+        
+        
     def distribute_chromosome(self, reward, penalty, speed, threshold, fitness):
     ################ ----------chromosome pub------------ ############
         incoming_msg = chromosome()
@@ -321,6 +365,7 @@ class DemoRobot:
         poss_orientations = [0, round(math.pi/2, 2), -round(math.pi/2, 2), round(math.pi, 2)]
         curr_index = poss_orientations.index(curr_orientation)
         return poss_orientations[curr_index: ] + poss_orientations[:curr_index]
+        
         
     def initiateCRW(self):
         step_count = 0 
@@ -428,15 +473,7 @@ class DemoRobot:
 
             while (self.isAvoiding):
                 print('initiating obstacle behavior')
-                # Linear velocity in the x-axis.
-                vel_msg.linear.x = -0.3  # slight movement backward along the obstacle
-                # Angular velocity in the z-axis.
-                vel_msg.angular.z = 0.33  # intended to rotate robot away from obstacle
-                # Publishing of vel_msg for Gazebo
-                self.vel_publisher.publish(vel_msg)
-                self.rviz_publisher.publish(vel_msg)
-                # only updates after each iteration
-                euclidean_distance_curr = self.euclidean_distance(goal_pose, self.pose)
+                self.avoidanceBehavior() # continously check for obstacles
 
                 self.rate.sleep()
 
@@ -476,7 +513,8 @@ if __name__ == '__main__':
 
         demo_robot = DemoRobot()
         # demo_robot.initiateCRW()
-        demo_robot.initiateSpiralMove()
+        # demo_robot.initiateSpiralMove()
+        # demo_robot.homing_behavior()
         # demo_robot.initiateBallistic()
         # demo_robot.moveFromPointAtoPointB()
 

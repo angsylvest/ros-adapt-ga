@@ -25,21 +25,23 @@ pop_subscriber = rospy.Subscriber('light_pub_one', Float32, process_info)
 
 
 # Get initial pose from Gazebo
-odom_msg = rospy.wait_for_message('/odom', Odometry)
-init_msg.pose.pose.position.x = odom_msg.pose.pose.position.x
-init_msg.pose.pose.position.y = odom_msg.pose.pose.position.y
-init_msg.pose.pose.orientation.x = odom_msg.pose.pose.orientation.x
-init_msg.pose.pose.orientation.y = odom_msg.pose.pose.orientation.y
-init_msg.pose.pose.orientation.z = odom_msg.pose.pose.orientation.z
-init_msg.pose.pose.orientation.w = odom_msg.pose.pose.orientation.w
+# odom_msg = rospy.wait_for_message('/odom', Odometry)
+# init_msg.pose.pose.position.x = odom_msg.pose.pose.position.x
+# init_msg.pose.pose.position.y = odom_msg.pose.pose.position.y
+# init_msg.pose.pose.orientation.x = odom_msg.pose.pose.orientation.x
+# init_msg.pose.pose.orientation.y = odom_msg.pose.pose.orientation.y
+# init_msg.pose.pose.orientation.z = odom_msg.pose.pose.orientation.z
+# init_msg.pose.pose.orientation.w = odom_msg.pose.pose.orientation.w
 
 # Delay
-rospy.sleep(1)
+# rospy.sleep(1)
 
 # Publish message
 rospy.loginfo("setting initial pose")
-pub.publish(init_msg)
+# pub.publish(init_msg)
 rospy.loginfo("initial pose is set")
 
 while not rospy.is_shutdown():
-    print(sense_info)
+    # print('initalized')
+    pass
+    # pub.publish(sense_info)
