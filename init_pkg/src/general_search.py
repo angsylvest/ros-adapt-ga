@@ -82,7 +82,8 @@ class DemoRobot:
     def update_pose(self, data):
 
         global goal_pose 
-        pose_int = data.pose.pose.position
+        self.pose = data.pose.pose.position
+
         theta_int = data.pose.pose.orientation
         (r, p, y) = euler_from_quaternion([theta_int.x, theta_int.y, theta_int.z, theta_int.w])
         self.roll = r
@@ -377,7 +378,13 @@ class DemoRobot:
                 
             self.rate.sleep()
     	
-    def calculate_angle(self):
+    def calculate_angle(self, pose, goal):
+        # pos initialization 
+        x1 = pose.x
+        x2 = goal.x
+
+        y1 = pose.y
+        y2 = pose.y
 
         # want to use light source 
         dx = x2 - x1
@@ -393,7 +400,7 @@ class DemoRobot:
         vel_msg = Twist()
         euclidean_distance_curr = self.euclidean_distance(goal, self.pose)
         
-        home_orientation = self.calculate_angle()
+        home_orientation = self.calculate_angle(self.pose, goal)
 
         while (euclidean_distance_curr > 0.1):
 
@@ -448,7 +455,7 @@ if __name__ == '__main__':
         print('robot init!')
         # demo_robot.initiateCRW()
         # demo_robot.initiateSpiralMove()
-        demo_robot.initiateBallistic
-        # demo_robot.moveFromPointAtoPointB()
+        # demo_robot.initiateBallistic
+        demo_robot.moveFromPointAtoPointB(goal=demo_robot.pose)
 
         rospy.spin()
