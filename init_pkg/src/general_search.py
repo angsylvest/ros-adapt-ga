@@ -92,7 +92,7 @@ class DemoRobot:
     def lidarInfo(self, data):
         lidar_info = data
         if (lidar_info.ranges[0] < 0.3):
-            print("hit object")
+            print("hit object", lidar_info.ranges[0])
             self.isAvoiding = True
         else: 
             self.isAvoiding = False 
@@ -220,7 +220,7 @@ class DemoRobot:
         print('successfully reached goal .. shutting down') 
     
     
-    def avoidanceBehavior(self):
+    def avoidanceBehavior(self, goal_orientation = None):
         vel_msg = Twist()
         while (self.isAvoiding):
             print('initiating obstacle behavior')
@@ -235,6 +235,10 @@ class DemoRobot:
             # euclidean_distance_curr = self.euclidean_distance(goal_pose, self.pose)
 
             self.rate.sleep()
+
+        if goal_orientation:
+            print('completed avoidance reorienting to: ', goal_orientation)
+            self.reorient(goal_orientation)
     ## Example tasks that we would make robot do
     
     
@@ -280,7 +284,7 @@ class DemoRobot:
 
 
     def initiateCRW(self):
-        step_count = 50 
+        step_count = 5000 
  
         current_orientation = self.theta
         prob_dist = self.getProbDistrib(current_orientation)
@@ -294,7 +298,7 @@ class DemoRobot:
         print(self.gen_time, time.time(), self.init_time)
         while (time.time() - self.init_time <= self.gen_time): 
             # self.init_time = time.time()
-            self.avoidanceBehavior() # continously check for obstacles 
+            self.avoidanceBehavior(goal_orientation) # continously check for obstacles 
             
             step_count += 1 
             
@@ -307,6 +311,8 @@ class DemoRobot:
                 step_count = 0 
                 
             self.rate.sleep()
+
+        
     		
     		
     def initiateSpiralMove(self):
@@ -319,7 +325,8 @@ class DemoRobot:
         # set hard time limit 
         while (time.time() - self.init_time <= self.gen_time and init_index <= len(prob_dist)): 
             # self.init_time = time.time()
-            self.avoidanceBehavior() # continously check for obstacles 
+            goal_orientation = prob_dist[init_index]
+            self.avoidanceBehavior(goal_orientation) # continously check for obstacles 
             
             step_count += 1 
             
@@ -344,14 +351,14 @@ class DemoRobot:
         # set hard time limit 
         while (time.time() - self.init_time <= self.gen_time): 
             # self.init_time = time.time()
-            self.avoidanceBehavior() # continously check for obstacles 
+            self.avoidanceBehavior(goal_orientation) # continously check for obstacles 
             
             step_count += 1 
             
             if step_count == self.step_size: 
                 # re-orient again to another cardinal direction 
                 goal_orientation = self.theta
-                self.reorient()
+                self.reorient(goal_orientation)
                 step_count = 0 
                 
             self.rate.sleep()
