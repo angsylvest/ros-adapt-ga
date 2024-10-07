@@ -1,0 +1,35 @@
+<launch>
+  <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [burger, waffle, waffle_pi]"/>
+
+  <!-- Launch the Gazebo world -->
+  <include file="$(find turtlebot3_gazebo)/launch/turtlebot3_world.launch">
+    <arg name="model" value="$(arg model)" />
+  </include>
+
+  <!-- Spawn the first TurtleBot in its own namespace -->
+  <group ns="turtlebot1">
+    <param name="robot_description" command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+    <node pkg="gazebo_ros" type="spawn_model" name="spawn_turtlebot1" args="-urdf -model turtlebot1 -x 1.0 -y 0.0 -z 0.0 -param robot_description" />
+    <include file="$(find turtlebot3_bringup)/launch/turtlebot3_model.launch">
+      <arg name="model" value="$(arg model)" />
+    </include>
+  </group>
+
+  <!-- Spawn the second TurtleBot in its own namespace -->
+  <group ns="turtlebot2">
+    <param name="robot_description" command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+    <node pkg="gazebo_ros" type="spawn_model" name="spawn_turtlebot2" args="-urdf -model turtlebot2 -x -1.0 -y 0.0 -z 0.0 -param robot_description" />
+    <include file="$(find turtlebot3_bringup)/launch/turtlebot3_model.launch">
+      <arg name="model" value="$(arg model)" />
+    </include>
+  </group>
+
+  <!-- Spawn the third TurtleBot in its own namespace -->
+  <group ns="turtlebot3">
+    <param name="robot_description" command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+    <node pkg="gazebo_ros" type="spawn_model" name="spawn_turtlebot3" args="-urdf -model turtlebot3 -x 0.0 -y 1.0 -z 0.0 -param robot_description" />
+    <include file="$(find turtlebot3_bringup)/launch/turtlebot3_model.launch">
+      <arg name="model" value="$(arg model)" />
+    </include>
+  </group>
+</launch>

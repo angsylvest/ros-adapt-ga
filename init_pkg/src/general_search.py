@@ -8,7 +8,8 @@ from geometry_msgs.msg import PoseStamped, Twist, Pose, Point
 from sensor_msgs.msg import LaserScan, Image
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
-# from init_pkg.msg import chromosome # will hopefully be used eventually for inter-agent communication 
+from init_pkg.msg import chromosome # will hopefully be used eventually for inter-agent communication 
+# from msg import chrosome
 import random 
 
 class DemoRobot:
@@ -318,6 +319,8 @@ class DemoRobot:
                 
             self.rate.sleep()
 
+        print('crw complete --')
+
         
     		
     		
@@ -453,9 +456,9 @@ if __name__ == '__main__':
     while not rospy.is_shutdown():
         demo_robot = DemoRobot()
         print('robot init!')
-        # demo_robot.initiateCRW()
+        demo_robot.initiateCRW()
         # demo_robot.initiateSpiralMove()
         # demo_robot.initiateBallistic
-        demo_robot.moveFromPointAtoPointB(goal=demo_robot.pose)
+        # demo_robot.moveFromPointAtoPointB(goal=demo_robot.pose)
 
         rospy.spin()
