@@ -36,13 +36,15 @@ class Strategy():
         if self.energy_expenditure() < 0: 
             self.bias_forward()
         
-        if self.obs_thres > self.total_collected: 
+        if self.obs_thres < self.total_collected: 
             self.weights = self.collect_counts
+            print(f'obs greater than total collected: {self.obs_thres, self.total_collected}')
         strat = random.choices(['straight','alternating-left','alternating-right', 'true random'], self.weights)[0] 
         self.curr_strat_index = ['straight','alternating-left','alternating-right', 'true random'].index(strat) 
         self.time_exploring_with_strat = 0 
         self.curr_index = 0 
 
+        print(f'current strat index: {self.curr_strat_index}')
         if self.curr_strat_index == 0: 
             self.assigned_orientations = self.create_crw(curr_dir)
         elif self.curr_strat_index == 1: 
@@ -120,11 +122,13 @@ def main():
     st = Strategy(reward=10, penalty=2, obs_thres=5, step_size=5)
 
     # returns set of orientations that robot should move towards given speed 
-    strategy_generated = st.resample(curr_dir=0.00)
-    print(f'example stat generated: {strategy_generated}')
+
+    for i in range(3): 
+        strategy_generated = st.resample(curr_dir=0.00)
+        print(f'example stat generated: {strategy_generated}')
 
 
      # update energy 
     st.time_exploring_with_strat += 1
 
-# main()
+main()

@@ -54,8 +54,15 @@ print(f'example genotype generated: {ga_rob.curr_genotype}')
 processed_chromosome = ga_rob.process_chromosome(ga_rob.curr_genotype)
 print(f'example of processed chromosome: {processed_chromosome}') # returns forward_speed, energy_cost, energy_per_item, observations_threshold
 
-st = Strategy(reward=10, penalty=2, obs_thres=5, step_size=5)
-st.update_from_chrom(processed_chromosome)
+rospy.init_node('simulation', anonymous=False)
+msg = chromosome()
+msg.speed, msg.reward, msg.penalty, msg.threshold, msg.fitness = str(processed_chromosome[0]), str(processed_chromosome[1]), str(processed_chromosome[2]), str(processed_chromosome[3]), 0
 
-ga_rob.update_best_encountered(r2=ga_rob_2, fitness = 0)
-ga_rob.reproduce()
+chrom_pubs[0].publish(msg)
+
+print(f'published custom topic')
+# st = Strategy(reward=10, penalty=2, obs_thres=5, step_size=5)
+# st.update_from_chrom(processed_chromosome)
+
+# ga_rob.update_best_encountered(r2=ga_rob_2, fitness = 0)
+# ga_rob.reproduce()

@@ -94,7 +94,7 @@ class DemoRobot:
     def lidarInfo(self, data):
         lidar_info = data
         if (lidar_info.ranges[0] < 0.3):
-            print("hit object", lidar_info.ranges[0])
+            # print("hit object", lidar_info.ranges[0])
             self.isAvoiding = True
         else: 
             self.isAvoiding = False 
@@ -196,9 +196,12 @@ class DemoRobot:
         vel_msg.angular.y = 0
         vel_msg.angular.z = 0
 
-        # Publishing our vel_msg for RVis
-        self.vel_publisher.publish(vel_msg)
-        self.rviz_publisher.publish(vel_msg)
+        # move slightly forward for set period of time 
+        init_time = time.time()
+        while (time.time() - init_time <= 5):  
+            # Publishing our vel_msg for RVis
+            self.vel_publisher.publish(vel_msg)
+            self.rviz_publisher.publish(vel_msg)
 
 
     def stop(self):
@@ -222,41 +225,81 @@ class DemoRobot:
         print('successfully reached goal .. shutting down') 
     
     
-    def avoidanceBehavior(self, goal_orientation = None):
+    def avoidanceBehavior(self, goal_orientation=None):
         vel_msg = Twist()
-        while (self.isAvoiding):
-            print('initiating obstacle behavior')
-		   # Linear velocity in the x-axis.
-            vel_msg.linear.x = -0.1  # slight movement backward along the obstacle
-            # Angular velocity in the z-axis.
-            vel_msg.angular.z = 0.1  # intended to rotate robot away from obstacle
-            # Publishing of vel_msg for Gazebo
+        
+        # Constants for movement
+        BACKWARD_SPEED = -0.1
+        TURN_SPEED = 0.2
+        MAX_DURATION = 5  # Maximum time to avoid
+        start_time = self.get_time()
+
+        while self.isAvoiding:
+            print('Initiating obstacle avoidance behavior')
+
+            # Set linear and angular velocities
+            vel_msg.linear.x = BACKWARD_SPEED  # Move slightly backward
+            vel_msg.angular.z = TURN_SPEED      # Rotate to avoid the obstacle
+            
+            # Publish the velocity message
             self.vel_publisher.publish(vel_msg)
             self.rviz_publisher.publish(vel_msg)
-            # only updates after each iteration
-            # euclidean_distance_curr = self.euclidean_distance(goal_pose, self.pose)
-
+            
+            # Check if enough time has passed
+            if self.get_time() - start_time > MAX_DURATION:
+                print('Avoidance duration exceeded, stopping avoidance behavior')
+                self.isAvoiding = False
+            
             self.rate.sleep()
 
+        # Once avoidance is complete, reorient if a goal orientation is provided
         if goal_orientation:
-            print('completed avoidance reorienting to: ', goal_orientation)
+            print('Completed avoidance, reorienting to:', goal_orientation)
             self.reorient(goal_orientation)
-    ## Example tasks that we would make robot do
+
+    def get_time(self):
+        # Implement a method to return current time in seconds
+        return rospy.get_time()  # or any timekeeping method you're using
+
+    # def avoidanceBehavior(self, goal_orientation = None):
+    #     vel_msg = Twist()
+    #     while (self.isAvoiding):
+    #         print('initiating obstacle behavior')
+	# 	   # Linear velocity in the x-axis.
+    #         vel_msg.linear.x = -0.1  # slight movement backward along the obstacle
+    #         # Angular velocity in the z-axis.
+    #         vel_msg.angular.z = 0.2  # intended to rotate robot away from obstacle
+    #         # Publishing of vel_msg for Gazebo
+    #         self.vel_publisher.publish(vel_msg)
+    #         self.rviz_publisher.publish(vel_msg)
+    #         # only updates after each iteration
+    #         # euclidean_distance_curr = self.euclidean_distance(goal_pose, self.pose)
+
+    #         self.rate.sleep()
+
+
+    #     if goal_orientation:
+    #         print('completed avoidance reorienting to: ', goal_orientation)
+    #         self.reorient(goal_orientation)
+    # ## Example tasks that we would make robot do
     
     
     def reorient(self, goal_orientation): 
         curr_orientation = self.theta 
         vel_msg = Twist()
         print('orienting to --', goal_orientation)
-        goal_orientation = goal_orientation[0]
+
+        if isinstance(goal_orientation, list):
+            goal_orientation = goal_orientation[0]
+
         while (abs(curr_orientation - goal_orientation)) > 0.2: # while re_orienting 
             if (self.isAvoiding == False):  # trying to force goal repositioning only when it's safe to do so
                 print('no obstacles .. initiating reorientation toward goal')
                 vel_msg.linear.x = 0
                 # Angular velocity in the z-axis.
                 vel_msg.angular.z = 0.3  # a test to see if slowly reorientating will allow robot to detect change
-                print('angular velocity in reorient ----------------')
-                print(vel_msg.angular.z)
+                # print('angular velocity in reorient ----------------')
+                # print(vel_msg.angular.z)
                 # Publishing of vel_msg for Gazebo
                 self.vel_publisher.publish(vel_msg)
                 self.rviz_publisher.publish(vel_msg)
@@ -289,6 +332,29 @@ class DemoRobot:
                 dist[i] += 1
         
         return dist, poss_orientations  # higher preference for current orientation
+    
+    def testMovement(self, route=None):
+        if route == None: 
+            route = [1.57, 0, -1.57, 3.14]
+        
+        step_count = 500 
+        current_orientation = self.theta
+
+        for goal_orientation in route: 
+            print(f'orienting towards: {goal_orientation}')
+            self.reorient(goal_orientation)
+            while (time.time() - self.init_time <= self.gen_time): 
+                step_count += 1 
+            
+                if step_count == self.step_size: 
+                    step_count = 0 
+                    print(f'exiting, next orientation')
+                    break 
+
+                self.rate.sleep()
+
+
+
 
     def initiateCRW(self):
         step_count = 500 
@@ -425,7 +491,7 @@ class DemoRobot:
 
                 if (self.isAvoiding == False):  # trying to force goal repositioning only when it's safe to do so
                     print('no obstacles .. initiating reorientation toward goal')
-                    vel_msg.linear.x = 0
+                    vel_msg.linear.x = 0.0
                     # Angular velocity in the z-axis.
                     vel_msg.angular.z = 0.3  # a test to see if slowly reorientating will allow robot to detect change
                     print('angular velocity in reorient ----------------')
@@ -456,7 +522,8 @@ if __name__ == '__main__':
     while not rospy.is_shutdown():
         demo_robot = DemoRobot()
         print('robot init!')
-        demo_robot.initiateCRW()
+        demo_robot.testMovement()
+        # demo_robot.initiateCRW()
         # demo_robot.initiateSpiralMove()
         # demo_robot.initiateBallistic
         # demo_robot.moveFromPointAtoPointB(goal=demo_robot.pose)
