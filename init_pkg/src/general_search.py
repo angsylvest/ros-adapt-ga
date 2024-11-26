@@ -61,7 +61,7 @@ class DemoRobot:
         
         # navigation-specific info 
         self.goal_orientation = 0 
-        self.step_size = 120 
+        self.step_size = 1200 # 120 
 	
         self.rate = rospy.Rate(10) # 10x per sec 
 
@@ -93,8 +93,9 @@ class DemoRobot:
 
     def lidarInfo(self, data):
         lidar_info = data
+        # print(f'lidar info: {lidar_info.ranges[0]}')
         if (lidar_info.ranges[0] < 0.3):
-            # print("hit object", lidar_info.ranges[0])
+            print("hit object", lidar_info.ranges[0])
             self.isAvoiding = True
         else: 
             self.isAvoiding = False 
@@ -199,6 +200,9 @@ class DemoRobot:
         # move slightly forward for set period of time 
         init_time = time.time()
         while (time.time() - init_time <= 5):  
+            if self.isAvoiding: 
+                print(f'moving straight but entering avoidance behavior')
+                self.avoidanceBehavior()
             # Publishing our vel_msg for RVis
             self.vel_publisher.publish(vel_msg)
             self.rviz_publisher.publish(vel_msg)
@@ -261,28 +265,6 @@ class DemoRobot:
         # Implement a method to return current time in seconds
         return rospy.get_time()  # or any timekeeping method you're using
 
-    # def avoidanceBehavior(self, goal_orientation = None):
-    #     vel_msg = Twist()
-    #     while (self.isAvoiding):
-    #         print('initiating obstacle behavior')
-	# 	   # Linear velocity in the x-axis.
-    #         vel_msg.linear.x = -0.1  # slight movement backward along the obstacle
-    #         # Angular velocity in the z-axis.
-    #         vel_msg.angular.z = 0.2  # intended to rotate robot away from obstacle
-    #         # Publishing of vel_msg for Gazebo
-    #         self.vel_publisher.publish(vel_msg)
-    #         self.rviz_publisher.publish(vel_msg)
-    #         # only updates after each iteration
-    #         # euclidean_distance_curr = self.euclidean_distance(goal_pose, self.pose)
-
-    #         self.rate.sleep()
-
-
-    #     if goal_orientation:
-    #         print('completed avoidance reorienting to: ', goal_orientation)
-    #         self.reorient(goal_orientation)
-    # ## Example tasks that we would make robot do
-    
     
     def reorient(self, goal_orientation): 
         curr_orientation = self.theta 
@@ -294,7 +276,6 @@ class DemoRobot:
 
         while (abs(curr_orientation - goal_orientation)) > 0.2: # while re_orienting 
             if (self.isAvoiding == False):  # trying to force goal repositioning only when it's safe to do so
-                print('no obstacles .. initiating reorientation toward goal')
                 vel_msg.linear.x = 0
                 # Angular velocity in the z-axis.
                 vel_msg.angular.z = 0.3  # a test to see if slowly reorientating will allow robot to detect change
@@ -309,6 +290,7 @@ class DemoRobot:
                 self.rate.sleep()
                 
             else: 
+                print(f'entering avoidance behavior in reorient()')
                 self.avoidanceBehavior()
 		    
 	# will stop rotating and continue moving 
