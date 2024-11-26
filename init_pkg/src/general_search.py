@@ -61,7 +61,7 @@ class DemoRobot:
         
         # navigation-specific info 
         self.goal_orientation = 0 
-        self.step_size = 1200 # after approx 2 sec, want to switch direction (based off self.rate)	
+        self.step_size = 120 
 	
         self.rate = rospy.Rate(10) # 10x per sec 
 
@@ -235,7 +235,7 @@ class DemoRobot:
         start_time = self.get_time()
 
         while self.isAvoiding:
-            print('Initiating obstacle avoidance behavior')
+            # print('Initiating obstacle avoidance behavior')
 
             # Set linear and angular velocities
             vel_msg.linear.x = BACKWARD_SPEED  # Move slightly backward
@@ -346,10 +346,15 @@ class DemoRobot:
             while (time.time() - self.init_time <= self.gen_time): 
                 step_count += 1 
             
-                if step_count == self.step_size: 
+                print(f'step count: {step_count} vs step size: {self.step_size}')
+                if step_count > self.step_size: 
                     step_count = 0 
                     print(f'exiting, next orientation')
                     break 
+
+                if self.isAvoiding:
+                    print(f'entering avoidance state')
+                    self.avoidanceBehavior()
 
                 self.rate.sleep()
 
