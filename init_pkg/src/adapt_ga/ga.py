@@ -1,8 +1,8 @@
 import random 
 
 # global var (that can be fine-tuned)
-_MAXIMUM_SPEED = 10
-_MINIMUM_SPEED = 5 
+_MAXIMUM_SPEED = 1 # 0.3
+_MINIMUM_SPEED = 1 # 0.3 
 _COST = 5
 _REWARD = 30 
 _OBSERV_THRES = 5
@@ -11,7 +11,7 @@ gene_list = [f'control speed {_MAXIMUM_SPEED}', f'energy cost {_COST}', f'food e
 
 class GA():
     def __init__(self):
-        self.curr_genotype = "" # initially nothing until created  
+        self.curr_genotype = self.create_individual_genotype() # initially nothing until created  
         self.fitness = 0 
         self.best_encountered_ruleset = ""
         self.best_encountered_fitness = 0

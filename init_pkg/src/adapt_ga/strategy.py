@@ -32,7 +32,8 @@ class Strategy():
         self.energy_per_item = processed_chrom[2]
         self.obs_thres = processed_chrom[3]
 
-    def resample(self, curr_dir):
+
+    def resample(self, curr_dir=0.0):
         if self.energy_expenditure() < 0: 
             self.bias_forward()
         

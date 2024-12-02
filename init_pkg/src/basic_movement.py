@@ -120,8 +120,8 @@ class DemoRobot:
          # print(data)
          
     def process_info(self, data): 
-    	print('incoming chromosome msg published --', data)
-    	d = data
+        print('incoming chromosome msg published --', data)
+        d = data
 
     def process_light_sensor_data(self):
         self.light_sensor_one = ""
