@@ -18,6 +18,9 @@ class DemoRobot:
         # self.goal_pose = Point()
         self.lidar_info = LaserScan()
 
+        # store initial position info (for homing behavior)
+        self.initial_position = None
+
         self.isAvoiding = False
         self.isReorienting = False
         self.roll = 0
@@ -91,6 +94,11 @@ class DemoRobot:
         self.pitch = p
         self.theta = y
 
+        if self.initial_position is None:
+            # Store the initial position when the robot first starts
+            self.initial_position = data.pose.pose
+            rospy.loginfo("Initial position stored: %s", self.initial_position)
+
     def lidarInfo(self, data):
         lidar_info = data
         # print(f'lidar info: {lidar_info.ranges[0]}')
@@ -133,6 +141,69 @@ class DemoRobot:
         # Publishing our vel_msg for RVis
         self.vel_publisher.publish(vel_msg)
         self.rviz_publisher.publish(vel_msg)
+
+
+    def move_to_position(self, target_pose):
+        # Move the robot to the target pose (x, y, theta)
+        move_cmd = Twist()
+
+        # Define the rate of publishing messages
+        rate = rospy.Rate(10)
+        distance = float('inf')
+
+        # Loop to continuously send commands to move towards the target position
+        while not rospy.is_shutdown():
+            if self.initial_position:
+
+                while distance > 0.1:  # Continue until the robot is close enough to the target position
+                    # Get current position from the odometry
+                    if not self.isAvoiding:
+                        current_pose = self.pose
+
+                        # Check if robot is close enough to the target position (within a threshold)
+                        distance = ((current_pose.x - target_pose.position.x) ** 2 +
+                                    (current_pose.y - target_pose.position.y) ** 2) ** 0.5
+
+
+                        if distance < 0.5:  # threshold to stop
+                            rospy.loginfo("Reached the initial position!")
+                            move_cmd.linear.x = 0
+                            move_cmd.angular.z = 0
+                            
+                            # Publish the move command
+                            self.vel_publisher.publish(move_cmd)
+                            self.rviz_publisher.publish(move_cmd)
+                            break  # Exit loop once the robot has reached the goal
+                        else:
+                            # Calculate the angle towards the target
+                            dx = target_pose.position.x - current_pose.x
+                            dy = target_pose.position.y - current_pose.y
+                            target_angle = math.atan2(dy, dx)
+
+                            # Calculate the difference between the robot's current orientation and the target angle
+                            angle_diff = target_angle - self.theta # current_pose.theta
+
+                            # Normalize the angle difference to be between -pi and pi
+                            angle_diff = math.atan2(math.sin(angle_diff), math.cos(angle_diff))
+
+                            # If the robot is not facing the target, rotate it
+                            if abs(angle_diff) > 0.1:  # Threshold to start turning
+                                move_cmd.linear.x = 0  # Stop moving forward
+                                move_cmd.angular.z = 0.2 * angle_diff  # Turn towards the target
+
+                            else:
+                                # Move forward towards the target
+                                move_cmd.linear.x = 0.2  # Move forward at 0.2 m/s
+                                move_cmd.angular.z = 0  # No rotation
+
+                            # Publish the move command
+                            self.vel_publisher.publish(move_cmd)
+                            self.rviz_publisher.publish(move_cmd)
+                    else: 
+                        self.avoidanceBehavior()
+
+            rate.sleep()
+
        
 
     def goalBehavior(self):
@@ -317,7 +388,8 @@ class DemoRobot:
     
     def testMovement(self, route=None):
         if route == None: 
-            route = [1.57, 0, -1.57, 3.14]
+            # route = [1.57, 0, -1.57, 3.14]
+            route = [1.57]
         
         step_count = 500 
         current_orientation = self.theta
@@ -340,8 +412,14 @@ class DemoRobot:
 
                 self.rate.sleep()
 
-
-
+    def testHoming(self): 
+        # Start homing behavior (move back to initial position)
+        if self.initial_position:
+            rospy.loginfo("Homing to initial position...")
+            self.move_to_position(self.initial_position)
+        else:
+            rospy.logwarn("Initial position not set. Make sure the robot has moved to set it.")
+ 
 
     def initiateCRW(self):
         step_count = 500 
@@ -375,8 +453,6 @@ class DemoRobot:
         print('crw complete --')
 
         
-    		
-    		
     def initiateSpiralMove(self):
         step_count = 0 
  
@@ -510,6 +586,8 @@ if __name__ == '__main__':
         demo_robot = DemoRobot()
         print('robot init!')
         demo_robot.testMovement()
+        print(f'proceeding with homing behavior')
+        demo_robot.testHoming()
         # demo_robot.initiateCRW()
         # demo_robot.initiateSpiralMove()
         # demo_robot.initiateBallistic
