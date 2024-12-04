@@ -16,6 +16,7 @@ from std_msgs.msg import Float32, Bool
 from adapt_ga.ga import GA
 from adapt_ga.strategy import Strategy
 
+
 class DemoRobot:
     def __init__(self):
         # keep track of robot status info 
@@ -40,6 +41,15 @@ class DemoRobot:
         # self.chrm.curr_genotype = ""
         self.processed_chrm = self.chrm.process_chromosome(self.chrm.curr_genotype)
         self.partner_chrm = "" # read from file here as well 
+
+        # read from file here: 
+        with open('/home/angelsylvester/catkin_ws/src/ros-opi-ga/init_pkg/src/adapt_ga/processed_chrm.txt', 'r') as file:
+        # with open('./init_pkg/processed_chrm.txt', 'r') as file:   
+            lines = file.readlines()
+            self.chrm.curr_genotype = lines[0]
+            self.processed_chrm = self.chrm.process_chromosome(self.chrm.curr_genotype)
+            self.partner_chrm = lines[1] # read from file here as well 
+
         self.partner_fit = 0 
         self.st = Strategy()
         self.st.update_from_chrom(self.processed_chrm)
