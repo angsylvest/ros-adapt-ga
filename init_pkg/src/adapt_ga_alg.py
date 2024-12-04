@@ -63,7 +63,6 @@ class DemoRobot:
 
         # keep track of time elapsed 
         self.start_time = time.time()
-        self.curr_time = time.time()
         self.init_time = time.time()
 
         # INIT NODE
@@ -275,6 +274,7 @@ class DemoRobot:
         
         step_count = 500 
         current_orientation = self.theta
+        self.init_time = time.time()
 
         for goal_orientation in route: 
             print(f'orienting towards: {goal_orientation}')
