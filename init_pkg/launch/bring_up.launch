@@ -1,0 +1,10 @@
+<launch> 
+
+    <group ns="robot_1">
+        <!-- run robot bringup -->
+        <include file="$(find turtlebot3_bringup)/launch/turtlebot3_robot.launch" />
+        <!-- runs contact topic for each robot -->
+        <node name="contact_sensor" pkg="init_pkg" type="dist_pub.py" output="screen" /> 
+    </group>
+
+</launch> 

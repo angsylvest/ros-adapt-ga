@@ -7,6 +7,8 @@ _COST = 5
 _REWARD = 30 
 _OBSERV_THRES = 5
 
+random.seed(10)
+
 gene_list = [f'control speed {_MAXIMUM_SPEED}', f'energy cost {_COST}', f'food energy {_REWARD}', f'observations thres {_OBSERV_THRES}']
 
 class GA():

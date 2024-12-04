@@ -27,7 +27,7 @@ class Strategy():
 
     def update_from_chrom(self, processed_chrom):
         # forward_speed, energy_cost, energy_per_item, observations_threshold
-        self.step_size = processed_chrom[0] # basically the speed 
+        self.step_size = processed_chrom[0] # basically the speed, ignored for now 
         self.penalty = processed_chrom[1]
         self.energy_per_item = processed_chrom[2]
         self.obs_thres = processed_chrom[3]

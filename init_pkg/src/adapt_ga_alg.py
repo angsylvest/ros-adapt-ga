@@ -233,8 +233,7 @@ class DemoRobot:
             vel_msg.angular.z = TURN_SPEED      # Rotate to avoid the obstacle
             
             # Publish the velocity message
-            self.vel_publisher.publish(vel_msg)
-            self.rviz_publisher.publish(vel_msg)
+            self.cmd_vel_pub.publish(vel_msg)
             
             # Check if enough time has passed
             if self.get_time() - start_time > MAX_DURATION:
@@ -327,6 +326,7 @@ if __name__ == '__main__':
     ## Put your functions here to start
     while not rospy.is_shutdown():
         demo_robot = DemoRobot()
+        strategy_generated = demo_robot.st.resample(curr_dir=0.00) # will want to eventually use curr orient
         route = demo_robot.st_gen
         demo_robot.search_behavior(route=route)
 
