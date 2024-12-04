@@ -2,7 +2,7 @@ import random
 from math import pi 
 
 class Strategy():
-    def __init__(self, reward, penalty, obs_thres, step_size): # last 3 params from GA ruleset
+    def __init__(self, reward=0, penalty=0, obs_thres=0, step_size=0): # last 3 params from GA ruleset
 
         # available orientations (0, 90, 180, 270)
 
@@ -132,4 +132,4 @@ def main():
      # update energy 
     st.time_exploring_with_strat += 1
 
-main()
+# main()

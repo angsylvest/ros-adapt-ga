@@ -587,7 +587,7 @@ if __name__ == '__main__':
         print('robot init!')
         demo_robot.testMovement()
         print(f'proceeding with homing behavior')
-        demo_robot.testHoming()
+        # demo_robot.testHoming()
         # demo_robot.initiateCRW()
         # demo_robot.initiateSpiralMove()
         # demo_robot.initiateBallistic

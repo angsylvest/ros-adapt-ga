@@ -20,7 +20,7 @@ class DemoRobot:
     def __init__(self):
         # keep track of robot status info 
         self.pose = Point()
-        self.lidar_info = LaserScan()
+        # self.lidar_info = LaserScan()
 
         # store initial position info (for homing behavior)
         self.initial_position = None
@@ -48,6 +48,9 @@ class DemoRobot:
         self.num_collected = 0 
         self.num_collisions = 0 
 
+        self.obstacle_distance_threshold = 1.0
+        self.collectable_distance_threshold = 2.0  
+
         # keep track of time elapsed 
         self.start_time = time.time()
         self.curr_time = time.time()
@@ -56,17 +59,22 @@ class DemoRobot:
         # INIT NODE
         rospy.init_node('robot_1', anonymous=False)
 
+        robot_group = "" 
+
         # SET UP PUBLISHERS
-        self.cmd_vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-        self.cnt_pub = rospy.Publisher('/contact', Bool, queue_size=10)
-        self.fit_pub = rospy.Publisher('/fit_', Float32, queue_size=10)
+        self.cmd_vel_pub = rospy.Publisher(f'{robot_group}/cmd_vel', Twist, queue_size=10)
+        self.cnt_pub = rospy.Publisher(f'{robot_group}/contact', Bool, queue_size=10)
+        self.fit_pub = rospy.Publisher(f'{robot_group}/fit_', Float32, queue_size=10)
+        print('publishers set up')
 
         # SET UP SUBSCRIBERS
-        self.pose_subscriber = rospy.Subscriber('/odom',
+        self.pose_subscriber = rospy.Subscriber(f'{robot_group}/odom',
                                            Odometry, self.update_pose)
-        self.lidar_subscriber = rospy.Subscriber('/scan', LaserScan, self.lidar_info) 
-        self.cnt_sub = rospy.Subscriber('/contact', Bool, self.contact_info) 
-        self.cnt_sub = rospy.Subscriber('/fit_', Float32, self.update_partner) 
+        self.lidar_subscriber = rospy.Subscriber(f'{robot_group}/scan', LaserScan, self.lidar_info) 
+        self.cnt_sub = rospy.Subscriber(f'{robot_group}/contact', Bool, self.contact_info) 
+        self.cnt_sub = rospy.Subscriber(f'{robot_group}/fit_', Float32, self.update_partner) 
+
+        print('subscribers set up')
 
         # navigation-specific info 
         self.goal_orientation = 0 
@@ -140,14 +148,14 @@ class DemoRobot:
         collectable_proportion = collectable_count / total_count if total_count > 0 else 0
 
         # Decision making based on proportions
-        if obstacle_proportion > 0.5:  # More than 50% of the front range is an obstacle
+        if obstacle_proportion > 0.9: 
             print(f"Obstacle detected in front. Obstacle proportion: {obstacle_proportion:.2f}")
             self.isAvoiding = True 
-        elif collectable_proportion > 0.1:  # If there’s a small proportion of collectable objects
+        elif collectable_proportion > 0.6: 
             print(f"Collectable object detected. Collectable proportion: {collectable_proportion:.2f}")
             self.isHoming = True 
         else:
-            print(f"Nothing detected or detected too far for action.")
+            # print(f"Nothing detected or detected too far for action.")
             self.isAvoiding = False 
 
     def contact_info(self, data): 
@@ -213,6 +221,10 @@ class DemoRobot:
         else:
             rospy.logwarn("Initial position not set. Make sure the robot has moved to set it.")
 
+    def get_time(self):
+        # Implement a method to return current time in seconds
+        return rospy.get_time()  # or any timekeeping method you're using
+    
     def avoidance_behavior(self, goal_orientation=None): 
         vel_msg = Twist()
         self.num_collisions += 1 

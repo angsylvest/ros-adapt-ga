@@ -1,0 +1,7 @@
+<launch> 
+
+    <!-- runs adapt-ga alg -->
+    <node name="contact_sensor" pkg="init_pkg" type="adapt_ga_alg.py" output="screen" /> 
+
+
+</launch> 
