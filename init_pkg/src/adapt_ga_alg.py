@@ -67,21 +67,21 @@ class DemoRobot:
 
         # INIT NODE
         rospy.init_node('robot_1', anonymous=False)
-
-        robot_group = "" 
+        robot_namespace = rospy.get_param('~robot_namespace', 'robot_1')  # Default to 'robot_1'
+        print(f'robot name_space: {robot_namespace}')
+        self.robot_namespace = robot_namespace 
 
         # SET UP PUBLISHERS
-        self.cmd_vel_pub = rospy.Publisher(f'{robot_group}/cmd_vel', Twist, queue_size=10)
-        self.cnt_pub = rospy.Publisher(f'{robot_group}/contact', Bool, queue_size=10)
-        self.fit_pub = rospy.Publisher(f'{robot_group}/fit_', Float32, queue_size=10)
+        self.cmd_vel_pub = rospy.Publisher(f'/{self.robot_namespace}/cmd_vel', Twist, queue_size=10)
+        self.cnt_pub = rospy.Publisher(f'/{self.robot_namespace}/contact', Bool, queue_size=10)
+        self.fit_pub = rospy.Publisher(f'/{self.robot_namespace}/fit_', Float32, queue_size=10)
         print('publishers set up')
 
         # SET UP SUBSCRIBERS
-        self.pose_subscriber = rospy.Subscriber(f'{robot_group}/odom',
-                                           Odometry, self.update_pose)
-        self.lidar_subscriber = rospy.Subscriber(f'{robot_group}/scan', LaserScan, self.lidar_info) 
-        self.cnt_sub = rospy.Subscriber(f'{robot_group}/contact', Bool, self.contact_info) 
-        self.cnt_sub = rospy.Subscriber(f'{robot_group}/fit_', Float32, self.update_partner) 
+        self.pose_subscriber = rospy.Subscriber(f'/{self.robot_namespace}/odom', Odometry, self.update_pose)
+        self.lidar_subscriber = rospy.Subscriber(f'/{self.robot_namespace}/scan', LaserScan, self.lidar_info)
+        self.cnt_sub = rospy.Subscriber(f'/{self.robot_namespace}/contact', Bool, self.contact_info)
+        self.fit_sub = rospy.Subscriber(f'/{self.robot_namespace}/fit_', Float32, self.update_partner)
 
         print('subscribers set up')
 
@@ -195,7 +195,7 @@ class DemoRobot:
                 while distance > 0.1:  # Continue until the robot is close enough to the target position
                     # Get current position from the odometry
                     if not self.isAvoiding:
-                        current_pose = self.pose.position
+                        current_pose = self.curr_pos # self.pose.position
                         target_pose = self.initial_position
 
                         distance = ((current_pose.x - target_pose.position.x) ** 2 +

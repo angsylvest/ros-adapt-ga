@@ -198,4 +198,4 @@ def main():
     new_chr = ga_rob.reproduce()
     print(f'updated chromosome here: {new_chr}')
 
-main()
+# main()

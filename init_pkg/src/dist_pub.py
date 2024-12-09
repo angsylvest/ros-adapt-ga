@@ -1,3 +1,4 @@
+#! /usr/bin/python3
 import serial
 import rospy
 from std_msgs.msg import Float32, Bool

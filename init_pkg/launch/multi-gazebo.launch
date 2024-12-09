@@ -1,0 +1,34 @@
+<launch>
+    <!-- Launch the Gazebo environment for stage_1 -->
+    <include file="$(find turtlebot3_gazebo)/launch/turtlebot3_stage_1.launch">
+        <param name="use_sim_time" value="true" />
+        <!-- Disable spawning of default robot by setting the model to empty -->
+        <param name="turtlebot3_model" value="empty" />
+    </include>
+    
+    <!-- Launch robot_1 in the 'robot_1' namespace -->
+    <group ns="robot_1">
+        <!-- Spawn robot_1 with a unique name, specifying URDF format -->
+        <node name="spawn_robot_1" pkg="gazebo_ros" type="spawn_model" 
+              args="-urdf -model turtlebot3_burger_robot_1 -param robot_description -x 1.0 -y 0.0 -z 0.0" />
+        
+        <!-- Optionally, add additional robot-specific nodes for robot_1 -->
+        <node name="adapt_ga_alg_robot_1" pkg="init_pkg" type="adapt_ga_alg.py" output="screen">
+            <param name="robot_namespace" value="robot_1" />
+        </node>
+    </group>
+
+    <!-- Launch robot_2 in the 'robot_2' namespace -->
+    <group ns="robot_2">
+        <!-- Spawn robot_2 with a unique name, specifying URDF format -->
+        <node name="spawn_robot_2" pkg="gazebo_ros" type="spawn_model" 
+              args="-urdf -model turtlebot3_burger_robot_2 -param robot_description -x 1.0 -y 0.0 -z 0.0" />
+        
+        <!-- Optionally, add additional robot-specific nodes for robot_2 -->
+        <node name="adapt_ga_alg_robot_2" pkg="init_pkg" type="adapt_ga_alg.py" output="screen">
+            <param name="robot_namespace" value="robot_2" />
+        </node>
+    </group>
+
+</launch>
+
