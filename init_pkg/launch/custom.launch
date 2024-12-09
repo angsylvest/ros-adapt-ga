@@ -1,10 +1,14 @@
 <launch>
   <!-- Launch Gazebo with the custom world that includes stage_1 and markers -->
-  <param name="use_sim_time" value="true"/>
-  <node name="gazebo" pkg="gazebo_ros" type="gzserver" args="-u -world $(find init_pkg)/worlds/custom_stage_1.world" output="screen"/>
 
-  <!-- Launch the Gazebo GUI (optional, but useful for visualization) -->
-  <node name="gazebo_gui" pkg="gazebo_ros" type="gzclient" output="screen"/>
+<include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find init_pkg)/worlds/attempt.world"/>
+    <arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="0.1"/>
+    <arg name="gui" value="true"/>
+    <arg name="headless" value="false"/>
+    <arg name="debug" value="false"/>
+  </include>
 
   <!-- Launch robot_1 in the 'robot_1' namespace -->
   <group ns="robot_1">

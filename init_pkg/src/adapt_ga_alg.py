@@ -198,18 +198,18 @@ class DemoRobot:
                         current_pose = self.curr_pos # self.pose.position
                         target_pose = self.initial_position
 
-                        distance = ((current_pose.x - target_pose.position.x) ** 2 +
-                                    (current_pose.y - target_pose.position.y) ** 2) ** 0.5
+                        distance = ((current_pose.position.x - target_pose.position.x) ** 2 +
+                                    (current_pose.position.y - target_pose.position.y) ** 2) ** 0.5
 
                         if distance < 0.5:  # threshold to stop
                             rospy.loginfo("Reached the initial position!")
                             move_cmd.linear.x = 0
                             move_cmd.angular.z = 0
                             self.cmd_vel_pub.publish(move_cmd)
-                            break  # Exit loop once the robot has reached the goal
+                            return  # Exit loop once the robot has reached the goal
                         else:
-                            dx = target_pose.position.x - current_pose.x
-                            dy = target_pose.position.y - current_pose.y
+                            dx = target_pose.position.x - current_pose.position.x
+                            dy = target_pose.position.y - current_pose.position.y
                             target_angle = math.atan2(dy, dx)
                             angle_diff = target_angle - self.theta # current_pose.theta
                             angle_diff = math.atan2(math.sin(angle_diff), math.cos(angle_diff))

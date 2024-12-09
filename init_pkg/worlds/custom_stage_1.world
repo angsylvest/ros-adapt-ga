@@ -36,32 +36,6 @@
       <uri>model://turtlebot3_square</uri>
     </include>
 
-    <!-- Small Solid Object 1 (Cube) -->
-    <model name="small_cube_1">
-      <pose>2 0 0 0 0 0</pose> <!-- Position the cube at x=2, y=0, z=0.1, on the floor -->
-      <link name="link">
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.1 0.1 0.1</size> <!-- 10 cm x 10 cm x 10 cm cube -->
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.1 0.1 0.1</size> <!-- 10 cm x 10 cm x 10 cm cube -->
-            </box>
-          </geometry>
-          <material>
-            <ambient>1 0 0 1</ambient> <!-- Red color -->
-            <diffuse>1 0 0 1</diffuse>
-            <specular>0 0 0 0</specular>
-          </material>
-        </visual>
-      </link>
-    </model>
-
     <scene>
       <ambient>0.4 0.4 0.4 1</ambient>
       <background>0.7 0.7 0.7 1</background>
