@@ -34,7 +34,13 @@ class DemoRobot:
         self.roll = 0
         self.pitch = 0
         self.theta = 0
-        
+
+        # INIT NODE
+        rospy.init_node('robot_1', anonymous=False)
+        robot_namespace = rospy.get_param('~robot_namespace', 'robot_1')  # Default to 'robot_1'
+        print(f'robot name_space: {robot_namespace}')
+        self.robot_namespace = robot_namespace 
+
         # adapt-ga specific params 
         self.gen_time = 30 # in sec 
         self.chrm = GA() # NOTE: in sim, may just receive apriori
@@ -46,9 +52,14 @@ class DemoRobot:
         with open('/home/angelsylvester/catkin_ws/src/ros-opi-ga/init_pkg/src/adapt_ga/processed_chrm.txt', 'r') as file:
         # with open('./init_pkg/processed_chrm.txt', 'r') as file:   
             lines = file.readlines()
-            self.chrm.curr_genotype = lines[0]
+            
+            if self.robot_namespace == "robot_1":
+                self.chrm.curr_genotype = lines[0]
+                self.partner_chrm = lines[1] # read from file here as well 
+            else: 
+                self.chrm.curr_genotype = lines[1]
+                self.partner_chrm = lines[0] # read from file here as well 
             self.processed_chrm = self.chrm.process_chromosome(self.chrm.curr_genotype)
-            self.partner_chrm = lines[1] # read from file here as well 
 
         self.partner_fit = 0 
         self.st = Strategy()
@@ -64,12 +75,6 @@ class DemoRobot:
         # keep track of time elapsed 
         self.start_time = time.time()
         self.init_time = time.time()
-
-        # INIT NODE
-        rospy.init_node('robot_1', anonymous=False)
-        robot_namespace = rospy.get_param('~robot_namespace', 'robot_1')  # Default to 'robot_1'
-        print(f'robot name_space: {robot_namespace}')
-        self.robot_namespace = robot_namespace 
 
         # SET UP PUBLISHERS
         self.cmd_vel_pub = rospy.Publisher(f'/{self.robot_namespace}/cmd_vel', Twist, queue_size=10)
@@ -160,7 +165,7 @@ class DemoRobot:
         if obstacle_proportion > 0.9: 
             print(f"Obstacle detected in front. Obstacle proportion: {obstacle_proportion:.2f}")
             self.isAvoiding = True 
-        elif collectable_proportion > 0.6: 
+        elif collectable_proportion > 0.5: 
             print(f"Collectable object detected. Collectable proportion: {collectable_proportion:.2f}")
             self.isHoming = True 
         else:
@@ -168,6 +173,7 @@ class DemoRobot:
             self.isAvoiding = False 
 
     def contact_info(self, data): 
+        print(f'checking if contact is happening with data: {data}')
         if data: # if True, contact is happening
             self.inContact = True
             # self.chrm.best_encountered_fitness = self.partner_fit
