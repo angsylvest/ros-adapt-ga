@@ -1,4 +1,4 @@
-# Preliminary Real-robot OPI-GA 
+# Preliminary Real-robot ADAPT-GA 
 
 Start-up instructions (one robot)
 1. Turn on robot while connected to power or make sure portable battery is charged 
